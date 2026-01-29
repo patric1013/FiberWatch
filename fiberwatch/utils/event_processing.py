@@ -7,7 +7,9 @@ event from each cluster.
 """
 
 from typing import List
+
 import numpy as np
+
 from ..core.detector import DetectedEvent
 
 
@@ -151,22 +153,6 @@ def _handle_end_of_fiber_events(
             return other_events + filtered_end
 
     return clustered_events
-
-
-def filter_events_by_type(
-    events: List[DetectedEvent], event_types: List[str]
-) -> List[DetectedEvent]:
-    """
-    Filter events by their type.
-
-    Args:
-        events: List of detected events
-        event_types: List of event types to keep
-
-    Returns:
-        Filtered list of events
-    """
-    return [event for event in events if event.kind in event_types]
 
 
 def get_event_statistics(events: List[DetectedEvent]) -> dict:
