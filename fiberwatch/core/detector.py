@@ -7,12 +7,11 @@ from .detection import (
     DetectionContext,
     detect_bend,
     detect_dirty_connector,
-    detect_normal_break,
     detect_severe_break,
-    detect_small_peak_break,
     filter_peaks_before,
     find_effective_end,
     find_effective_start,
+    find_last_end_peak,
     find_peaks,
     fit_linear_baseline,
     get_scan_end,
@@ -101,9 +100,7 @@ class Detector:
         检测顺序：
         0. 严重断纤
         1. 弯折（无反射峰的阶梯下降）
-        2. 脏污（如果脏污前有普通断纤或小峰断纤，则报断裂）
-        3. 普通断纤
-        4. 小峰断纤
+        2. 脏污
         补充：反射峰识别
         """
         ctx = self.ctx
@@ -130,7 +127,12 @@ class Detector:
         peak_indices = [p["index"] for p in all_peaks]
 
         # 2. 确定有效检测范围
-        effective_end = find_effective_end(ctx, y, all_peaks)
+        # 优先使用结束峰检测；未识别到时回落到旧的范围估计逻辑
+        end_peak_index = find_last_end_peak(y)
+        if end_peak_index is None:
+            effective_end = find_effective_end(ctx, y, all_peaks)
+        else:
+            effective_end = end_peak_index
         effective_start = find_effective_start(ctx, all_peaks)
         offset_samples = int(cfg.offset_samples_km / ctx.sample_spacing_km)
 
@@ -170,36 +172,6 @@ class Detector:
             cur_peaks = filter_peaks_before(valid_peaks, cur_end)
             if cur_peaks:
                 detect_dirty_connector(
-                    ctx,
-                    y,
-                    cur_peaks,
-                    effective_start,
-                    peak_indices,
-                    all_peaks,
-                    events,
-                    processed_peak_indices,
-                )
-
-        # ── 阶段3：普通断纤 ──
-        cur_end = get_scan_end(events, effective_end, effective_start, LOOKBACK)
-        if cur_end > effective_start:
-            detect_normal_break(
-                ctx,
-                y,
-                effective_start,
-                cur_end,
-                0 if events else offset_samples,
-                peak_indices,
-                all_peaks,
-                events,
-            )
-
-        # ── 阶段4：小峰断纤 ──
-        cur_end = get_scan_end(events, effective_end, effective_start, LOOKBACK)
-        if cur_end > effective_start:
-            cur_peaks = filter_peaks_before(valid_peaks, cur_end)
-            if cur_peaks:
-                detect_small_peak_break(
                     ctx,
                     y,
                     cur_peaks,
