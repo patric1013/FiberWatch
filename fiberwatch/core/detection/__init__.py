@@ -15,7 +15,9 @@ from .range_finder import (
     filter_peaks_before,
     find_effective_end,
     find_effective_start,
+    find_last_end_peak,
     get_scan_end,
+    has_strong_noise_after_peak,
 )
 
 __all__ = [
@@ -26,6 +28,8 @@ __all__ = [
     "identify_reflection_peaks",
     "find_effective_end",
     "find_effective_start",
+    "find_last_end_peak",
+    "has_strong_noise_after_peak",
     "get_scan_end",
     "filter_peaks_before",
     "check_step_drop",
